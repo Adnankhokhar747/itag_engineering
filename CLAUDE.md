@@ -25,7 +25,7 @@ The repo lives at `https://github.com/globcomqatar/itag_engineering` (private), 
 place the version lives, nowhere else needs a manual bump):** MAJOR tracks the Frappe framework
 version this app targets (`15`); MINOR increments for a big change — a new feature, a new build
 going live, anything that changes what the app *does*; PATCH increments for a small
-change/fix that doesn't add new capability. Current: `15.5.2`, marking Builds ITAG-0.1.0 through
+change/fix that doesn't add new capability. Current: `15.5.3`, marking Builds ITAG-0.1.0 through
 ITAG-0.11.0 complete and independently verified against the real bench, the standalone
 "ITAG Engineering" Dashboard (9 charts, 6 number cards), the `Valve Type`/`Product Family`
 master DocTypes (converting Engineering Item Request's and Item's matching fields from free-text
@@ -57,9 +57,16 @@ Company records with no guaranteed order). Engineering Approval Matrix's and Ite
 `company` fields were deliberately left untouched - both have a tested, documented "blank =
 matches/applies to any Company" wildcard semantic (approval_matrix_service.py's specificity
 matching, permission_service.py's row-visibility filter) that forcing a single value would break;
-user confirmed 2026-07-25 to preserve that forward-compatibility hook rather than force it too.
-Next big change (e.g. Build ITAG-1.0.0 actually going live) → `15.6.0`; a small fix in between →
-`15.5.3`, `15.5.4`, ...
+user confirmed 2026-07-25 to preserve that forward-compatibility hook rather than force it too,
+and — `15.5.3` — the "ITAG Engineering" Workspace's "BOM, Routing & Inspection" card gaining
+direct DocType links to BOM and Routing (previously it held only Report links, with no way to
+reach the BOM/Routing list views from this card at all), and a new "Reporting" card holding the 7
+Report links that card used to carry (BOM Revision Comparison, BOM Release Readiness Exceptions,
+Multi-Level BOM Engineering Baseline, Routing Revision Register, Operation Hold Point Register,
+Inspection Plan Revision Register, Components Used in Obsolete or Superseded BOMs) - every other
+card's existing DocType/Report mix was deliberately left untouched, per the user's explicit scope
+choice. Next big change (e.g. Build ITAG-1.0.0 actually going live) → `15.6.0`; a small fix in
+between → `15.5.4`, `15.5.5`, ...
 **Every change to this app bumps the version as part of that same change — don't leave it for
 later.** For a PATCH bump, commit locally only — do not push or tag. For a MINOR (or MAJOR) bump,
 commit on `main` locally, then sync that same commit to a single persistent `staging` branch on
