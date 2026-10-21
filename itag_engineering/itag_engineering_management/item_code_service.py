@@ -13,10 +13,14 @@ def resolve_rule(product_family=None, valve_type=None, item_category=None, compa
 	rules = frappe.get_all(
 		"Item Code Rule",
 		filters=filters,
-		fields=["name", "priority", "product_family", "item_category", "company"],
+		fields=["name", "priority", "product_family", "item_category", "company", "code_prefix"],
 		order_by="priority desc",
 	)
 	for rule_row in rules:
+		# Numbered series (530-#####) are picked explicitly on the request.
+		# They must not win automatic matching just because their scope is blank.
+		if rule_row.code_prefix:
+			continue
 		if rule_row.product_family and rule_row.product_family != product_family:
 			continue
 		if rule_row.item_category and rule_row.item_category != item_category:

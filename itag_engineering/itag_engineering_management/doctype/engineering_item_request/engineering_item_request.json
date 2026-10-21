@@ -10,6 +10,7 @@
   "workflow_state",
   "engineering_section",
   "item_category",
+  "item_type",
   "product_family",
   "valve_type",
   "uom",
@@ -30,6 +31,7 @@
   "possible_duplicates_json",
   "coding_section",
   "item_code_rule",
+  "code_pattern",
   "reserved_item_code",
   "created_item"
  ],
@@ -70,12 +72,21 @@
    "options": "\nManufactured\nPurchased\nRaw Material\nSub-Assembly"
   },
   {
+   "default": "General",
+   "description": "Copied onto the Item as Item Type when the Item is created.",
+   "fieldname": "item_type",
+   "fieldtype": "Select",
+   "label": "Item Type",
+   "options": "\nCritical\nNon-Critical\nGeneral"
+  },
+  {
    "fieldname": "product_family",
    "fieldtype": "Link",
    "label": "Product Family",
    "options": "Product Family"
   },
   {
+   "description": "This selects the Item Code Rule. Tag Plate uses rule 530, so the pattern is 530-#####. Set that rule on the Valve Type.",
    "fieldname": "valve_type",
    "fieldtype": "Link",
    "label": "Valve Type",
@@ -173,13 +184,25 @@
   {
    "fieldname": "coding_section",
    "fieldtype": "Section Break",
-   "label": "Item Coding"
+   "label": "Item Code Rule"
   },
   {
+   "description": "Filled from the Valve Type. Create Item uses this rule's pattern and its own number sequence. You do not type the item code.",
    "fieldname": "item_code_rule",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Item Code Rule",
-   "options": "Item Code Rule"
+   "options": "Item Code Rule",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "item_code_rule.preview_template",
+   "fetch_if_empty": 0,
+   "description": "Pattern on the Item Code Rule. Create Item replaces ##### with the next number from that rule, for example 530-00003.",
+   "fieldname": "code_pattern",
+   "fieldtype": "Data",
+   "label": "Code Pattern",
+   "read_only": 1
   },
   {
    "fieldname": "reserved_item_code",

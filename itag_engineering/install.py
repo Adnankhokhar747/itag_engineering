@@ -60,6 +60,73 @@ def after_install():
 	create_roles()
 	create_default_valve_types()
 	create_default_product_families()
+	create_default_code_series()
+	create_valve_types_for_code_series()
+
+
+# Rows taken from the client's part-class sheet. A blank name on that sheet
+# is a reserved prefix: the number is kept so a later class can claim it
+# without colliding, and the series name can be edited afterwards.
+DEFAULT_CODE_SERIES = [
+	("530", "Tag Plate"),
+	("531", "Grooved pin for Name plate"),
+	("532", "Indicator Plate"),
+	("533", "Reserved 533"),
+	("534", "Reserved 534"),
+	("535", "Reserved 535"),
+	("536", "Reserved 536"),
+	("537", "Actuator mounting Bracket Assy - M/CG."),
+	("538", "Drive Adapter / Drive Head / Handle Sleeve"),
+	("539", "Adapter flange Actuator"),
+]
+
+
+def create_default_code_series():
+	"""Idempotent. Inserts a missing series only. Never overwrites a series
+	a user has already renamed or deactivated."""
+	for prefix, series_name in DEFAULT_CODE_SERIES:
+		if frappe.db.exists("Item Code Rule", {"code_prefix": prefix}):
+			continue
+		if frappe.db.exists("Item Code Rule", prefix):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Item Code Rule",
+				"rule_name": prefix,
+				"series_name": series_name,
+				"code_prefix": prefix,
+				"sequence_digits": 5,
+				"is_active": 1,
+				"priority": 0,
+				"company": "",
+				"separator": "-",
+				"case_conversion": "As Entered",
+			}
+		).insert(ignore_permissions=True)
+
+
+def create_valve_types_for_code_series():
+	"""One Valve Type per numbered series. The engineering request picks the
+	Valve Type, and the item code comes from the series linked here.
+	Idempotent: an existing Valve Type is left alone except to fill a blank
+	series link."""
+	for prefix, series_name in DEFAULT_CODE_SERIES:
+		rule = prefix if frappe.db.exists("Item Code Rule", prefix) else None
+		if not rule:
+			rule = frappe.db.get_value("Item Code Rule", {"code_prefix": prefix}, "name")
+		if frappe.db.exists("Valve Type", prefix):
+			if rule and not frappe.db.get_value("Valve Type", prefix, "item_code_rule"):
+				frappe.db.set_value("Valve Type", prefix, "item_code_rule", rule, update_modified=False)
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Valve Type",
+				"valve_type_code": prefix,
+				"valve_type_name": series_name,
+				"is_active": 1,
+				"item_code_rule": rule,
+			}
+		).insert(ignore_permissions=True)
 
 
 def create_roles():

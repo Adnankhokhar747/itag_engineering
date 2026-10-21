@@ -74,6 +74,21 @@ class TestItemCodeService(FrappeTestCase):
 		rule = resolve_rule()
 		self.assertEqual(rule.rule_name, "ICS Test Rule Low Priority")
 
+	def test_resolve_rule_skips_numbered_series(self):
+		frappe.get_doc(
+			{
+				"doctype": "Item Code Rule",
+				"rule_name": "ICS Test Series",
+				"series_name": "Tag Plate",
+				"code_prefix": "998",
+				"is_active": 1,
+				"priority": 999,
+				"company": "",
+			}
+		).insert()
+		rule = resolve_rule()
+		self.assertEqual(rule.rule_name, "ICS Test Rule High Priority")
+
 	def test_render_segments_renders_field_values(self):
 		segments = render_segments(self.rule, {"itag_product_family": "gate", "itag_valve_type": "ball"})
 		self.assertEqual(segments[0], "gate")

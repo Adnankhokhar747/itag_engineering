@@ -4,8 +4,14 @@
  "creation": "2026-07-20 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "title_field": "series_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "series_name,code_prefix",
  "field_order": [
   "rule_name",
+  "series_name",
+  "code_prefix",
+  "sequence_digits",
   "is_active",
   "column_break_1",
   "priority",
@@ -29,13 +35,39 @@
    "fieldtype": "Data",
    "label": "Rule Name",
    "reqd": 1,
-   "unique": 1
+   "unique": 1,
+   "description": "Stable id of this series. For a numbered series use the prefix itself, for example 530."
+  },
+  {
+   "fieldname": "series_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Series Name",
+   "description": "Name shown when this series is picked, for example Tag Plate."
   },
   {
    "default": "1",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
+  },
+  {
+   "fieldname": "code_prefix",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Series Prefix",
+   "description": "Starting code for this series. Tag Plate uses 530, so generated item codes are 530-00001, 530-00002, and so on. Each prefix has its own sequence."
+  },
+  {
+   "default": "5",
+   "depends_on": "eval:doc.code_prefix",
+   "fieldname": "sequence_digits",
+   "fieldtype": "Int",
+   "label": "Sequence Digits",
+   "non_negative": 1,
+   "description": "Digits after the hyphen. 5 produces 00001."
   },
   {
    "fieldname": "column_break_1",
@@ -107,9 +139,10 @@
   {
    "fieldname": "preview_template",
    "fieldtype": "Data",
-   "label": "Preview Template",
+   "in_list_view": 1,
+   "label": "Code Pattern",
    "read_only": 1,
-   "description": "Set by the Preview Item Code action."
+   "description": "Pattern for this series, for example 530-#####. The first real item code is 530-00001."
   },
   {
    "fieldname": "segments_section",

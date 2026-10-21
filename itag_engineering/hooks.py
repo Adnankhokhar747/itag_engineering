@@ -27,6 +27,8 @@ after_migrate = [
 	"itag_engineering.install.create_roles",
 	"itag_engineering.install.create_default_valve_types",
 	"itag_engineering.install.create_default_product_families",
+	"itag_engineering.install.create_default_code_series",
+	"itag_engineering.install.create_valve_types_for_code_series",
 	"itag_engineering.setup.custom_fields.sync_custom_fields",
 ]
 
