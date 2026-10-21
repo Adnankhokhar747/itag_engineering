@@ -67,27 +67,47 @@ def _check_eir_action_permission():
 		)
 
 
-def create_item_from_eir(eir_name):
+def create_item_from_eir(eir_name, eir=None, persist_request=True):
 	"""Idempotent: if this EIR already has created_item set, return it
-	without creating a second Item or consuming a second reservation."""
+	without creating a second Item or consuming a second reservation.
+
+	Pass the in-memory document when this runs inside that document's own
+	save (the workflow Create Item button). persist_request=False leaves
+	the request fields for that save to write, so the workflow save and the
+	item creation do not overwrite each other.
+	"""
 	_check_eir_action_permission()
-	eir = frappe.get_doc("Engineering Item Request", eir_name)
+	eir = eir or frappe.get_doc("Engineering Item Request", eir_name)
 
 	if eir.created_item:
 		return eir.created_item
 
-	if eir.workflow_state != "Approved":
+	previous_state = None
+	if getattr(eir, "_doc_before_save", None):
+		previous_state = eir._doc_before_save.get("workflow_state")
+	if eir.workflow_state != "Approved" and previous_state != "Approved":
 		frappe.throw(_("Engineering Item Request must be Approved before an Item can be created."))
 	if eir.duplicate_check_status == "Possible Duplicates Found":
 		frappe.throw(_("Possible duplicates must be resolved before an Item can be created."))
 
 	item_code = eir.reserved_item_code
 	if not item_code:
+		eir.apply_series_from_valve_type()
 		if not eir.item_code_rule:
-			frappe.throw(_("Item Code Rule is required to reserve a new Item Code."))
+			if not eir.valve_type:
+				frappe.throw(
+					_(
+						"Select a Valve Type. The item code comes from the Item Code Rule on that Valve Type."
+					)
+				)
+			frappe.throw(
+				_(
+					"Valve Type {0} has no Item Code Series. Open that Valve Type and set its Item Code Rule there."
+				).format(eir.valve_type)
+			)
 		values = {itag_field: eir.get(eir_field) for itag_field, eir_field in ITEM_FIELD_MAP.items()}
 		item_code = reserve_item_code(eir.item_code_rule, values)
-		frappe.db.set_value("Engineering Item Request", eir_name, "reserved_item_code", item_code)
+		eir.reserved_item_code = item_code
 		log_audit_event(
 			"Item Code Reservation", "Engineering Item Request", eir_name, {"item_code": item_code}
 		)
@@ -101,6 +121,10 @@ def create_item_from_eir(eir_name):
 		"itag_engineering_status": "Approved",
 		"description": eir.item_description,
 	}
+	# erpcloud_itagksa makes Item Type mandatory on Item. Copy the request's
+	# choice when that field exists, so creation does not die on a blank value.
+	if frappe.get_meta("Item").has_field("custom_product_type"):
+		item_fields["custom_product_type"] = eir.get("item_type") or "General"
 	for itag_field, eir_field in ITEM_FIELD_MAP.items():
 		item_fields[itag_field] = eir.get(eir_field)
 
@@ -112,11 +136,20 @@ def create_item_from_eir(eir_name):
 		{"item_code": item_code},
 		{"status": "Consumed", "consumed_by_item": item.item_code},
 	)
-	frappe.db.set_value(
-		"Engineering Item Request",
-		eir_name,
-		{"created_item": item.item_code, "workflow_state": "Item Created"},
-	)
+	eir.created_item = item.item_code
+	eir.workflow_state = "Item Created"
+	if persist_request:
+		frappe.db.set_value(
+			"Engineering Item Request",
+			eir_name,
+			{
+				"reserved_item_code": eir.reserved_item_code,
+				"item_code_rule": eir.item_code_rule,
+				"code_pattern": eir.code_pattern,
+				"created_item": eir.created_item,
+				"workflow_state": eir.workflow_state,
+			},
+		)
 	log_audit_event("Item Code Creation", "Item", item.item_code, {"originating_eir": eir_name})
 	return item.item_code
 

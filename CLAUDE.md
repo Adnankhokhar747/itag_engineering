@@ -25,7 +25,7 @@ The repo lives at `https://github.com/globcomqatar/itag_engineering` (private), 
 place the version lives, nowhere else needs a manual bump):** MAJOR tracks the Frappe framework
 version this app targets (`15`); MINOR increments for a big change — a new feature, a new build
 going live, anything that changes what the app *does*; PATCH increments for a small
-change/fix that doesn't add new capability. Current: `15.5.3`, marking Builds ITAG-0.1.0 through
+change/fix that doesn't add new capability. Current: `15.5.4`, marking Builds ITAG-0.1.0 through
 ITAG-0.11.0 complete and independently verified against the real bench, the standalone
 "ITAG Engineering" Dashboard (9 charts, 6 number cards), the `Valve Type`/`Product Family`
 master DocTypes (converting Engineering Item Request's and Item's matching fields from free-text
@@ -65,8 +65,13 @@ Report links that card used to carry (BOM Revision Comparison, BOM Release Readi
 Multi-Level BOM Engineering Baseline, Routing Revision Register, Operation Hold Point Register,
 Inspection Plan Revision Register, Components Used in Obsolete or Superseded BOMs) - every other
 card's existing DocType/Report mix was deliberately left untouched, per the user's explicit scope
-choice. Next big change (e.g. Build ITAG-1.0.0 actually going live) → `15.6.0`; a small fix in
-between → `15.5.4`, `15.5.5`, ...
+choice, and — `15.5.4` — Item Code Rule can be a numbered series (`code_prefix`, `series_name`,
+`sequence_digits`): the preview is `{prefix}-#####`, Valve Type links to exactly one such series,
+Engineering Item Request shows that rule read-only and Create Item reserves the next number from
+it, `resolve_rule()` skips any rule that has a code prefix so the older free-text rules still
+resolve on their own, and install/migrate seeds series 530–539 (533–536 reserved) idempotently
+without overwriting a renamed or deactivated series. Next big change (e.g. Build ITAG-1.0.0
+actually going live) → `15.6.0`; a small fix in between → `15.5.5`, `15.5.6`, ...
 **Every change to this app bumps the version as part of that same change — don't leave it for
 later.** For a PATCH bump, commit locally only — do not push or tag. For a MINOR (or MAJOR) bump,
 commit on `main` locally, then sync that same commit to a single persistent `staging` branch on

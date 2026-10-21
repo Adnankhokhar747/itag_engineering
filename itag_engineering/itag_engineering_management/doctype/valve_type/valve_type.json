@@ -4,11 +4,14 @@
  "creation": "2026-07-24 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "title_field": "valve_type_name",
+ "show_title_field_in_link": 1,
  "field_order": [
   "valve_type_code",
   "valve_type_name",
   "is_active",
   "column_break_1",
+  "item_code_rule",
   "description"
  ],
  "fields": [
@@ -38,6 +41,14 @@
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
+  },
+  {
+   "description": "Item codes for this Valve Type come from this Item Code Rule. Tag Plate uses rule 530, pattern 530-#####, so the first item is 530-00001.",
+   "fieldname": "item_code_rule",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code Rule",
+   "options": "Item Code Rule"
   },
   {
    "fieldname": "description",
@@ -87,6 +98,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "valve_type_name"
+ "states": []
 }

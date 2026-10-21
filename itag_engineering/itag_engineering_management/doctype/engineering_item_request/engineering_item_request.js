@@ -3,49 +3,89 @@
 
 frappe.ui.form.on("Engineering Item Request", {
 	refresh(frm) {
-		// The workflow's own "Create Item" transition (Approved -> Item
-		// Created) only flips workflow_state - it does not run the real
-		// eir_service.create_item_from_eir() logic (Item Code reservation,
-		// Item creation, reservation consumption). Give Approvers a single,
-		// correctly-wired action instead. The server-side guard in
-		// engineering_item_request.py's validate() blocks the raw workflow
-		// transition if it is used regardless, so this is a UX convenience,
-		// not the enforcement point.
-		if (frm.doc.workflow_state === "Approved" && !frm.doc.created_item) {
-			frm.add_custom_button(
-				__("Create Item"),
-				() => {
-					frappe.confirm(
-						__("This will reserve an Item Code (if not already reserved), create the Item, and move this request to Item Created. Continue?"),
-						() => {
-							// Not frm.call: create_item_from_eir_api is a
-							// standalone whitelisted module function, not a
-							// method on this DocType's controller, so a plain
-							// frappe.call keeps this a simple RPC instead of
-							// frm.call's doc-bound run_doc_method path.
-							frappe.call({
-								method: "itag_engineering.itag_engineering_management.eir_service.create_item_from_eir_api",
-								args: { eir_name: frm.doc.name },
-								freeze: true,
-								freeze_message: __("Creating Item..."),
-							}).then((r) => {
-								if (!r.message) {
-									return;
-								}
-								frappe.msgprint({
-									title: __("Item Created"),
-									indicator: "green",
-									message: __("Item {0} has been created and linked to this request.", [
-										frappe.utils.escape_html(r.message.data.item_code),
-									]),
-								});
-								frm.reload_doc();
-							});
-						}
-					);
-				},
-				__("Actions")
+		const pending = [];
+		if (frm.doc.valve_type && !frm._valve_type_name) {
+			pending.push(
+				frappe.db.get_value("Valve Type", frm.doc.valve_type, "valve_type_name").then((r) => {
+					frm._valve_type_name = (r.message && r.message.valve_type_name) || frm.doc.valve_type;
+				})
 			);
 		}
+		if (frm.doc.item_code_rule && !frm._rule_series_name) {
+			pending.push(
+				frappe.db.get_value("Item Code Rule", frm.doc.item_code_rule, "series_name").then((r) => {
+					frm._rule_series_name = (r.message && r.message.series_name) || frm.doc.item_code_rule;
+				})
+			);
+		}
+		if (!pending.length) {
+			show_valve_type_code_note(frm);
+			return;
+		}
+		Promise.all(pending).then(() => show_valve_type_code_note(frm));
+	},
+	valve_type(frm) {
+		if (!frm.doc.valve_type) {
+			frm.set_value("item_code_rule", "");
+			frm.set_value("code_pattern", "");
+			show_valve_type_code_note(frm);
+			return;
+		}
+		frappe.db.get_value("Valve Type", frm.doc.valve_type, ["item_code_rule", "valve_type_name"]).then((r) => {
+			const rule = (r.message && r.message.item_code_rule) || "";
+			frm._valve_type_name = (r.message && r.message.valve_type_name) || frm.doc.valve_type;
+			frm.set_value("item_code_rule", rule).then(() => show_valve_type_code_note(frm));
+			if (!rule) {
+				frm.set_value("code_pattern", "");
+			}
+		});
+	},
+	item_code_rule(frm) {
+		if (!frm.doc.item_code_rule) {
+			frm.set_value("code_pattern", "");
+			show_valve_type_code_note(frm);
+			return;
+		}
+		frappe.db.get_value("Item Code Rule", frm.doc.item_code_rule, ["preview_template", "series_name"]).then((r) => {
+			frm._rule_series_name = (r.message && r.message.series_name) || frm.doc.item_code_rule;
+			frm.set_value("code_pattern", (r.message && r.message.preview_template) || "").then(() => {
+				show_valve_type_code_note(frm);
+			});
+		});
 	},
 });
+
+function show_valve_type_code_note(frm) {
+	if (frm.doc.created_item) {
+		frm.set_intro("");
+		return;
+	}
+	if (!frm.doc.valve_type) {
+		frm.set_intro(
+			__(
+				"Select a Valve Type. The Item Code Rule on that Valve Type supplies the pattern, for example Tag Plate uses 530-#####."
+			),
+			"blue"
+		);
+		return;
+	}
+	const valve_label = frm._valve_type_name || frm.doc.valve_type;
+	if (!frm.doc.item_code_rule || !frm.doc.code_pattern) {
+		frm.set_intro(
+			__(
+				"Valve Type {0} has no Item Code Rule. Open that Valve Type and set Item Code Series there.",
+				[valve_label]
+			),
+			"orange"
+		);
+		return;
+	}
+	const rule_label = frm._rule_series_name || frm.doc.item_code_rule;
+	frm.set_intro(
+		__(
+			"Item code comes from Item Code Rule {0} ({1}), selected by Valve Type {2}. Create Item assigns the next number from that rule.",
+			[rule_label, frm.doc.code_pattern, valve_label]
+		),
+		"green"
+	);
+}
