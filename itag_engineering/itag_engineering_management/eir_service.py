@@ -29,6 +29,7 @@ ITEM_FIELD_MAP = {
 
 CREATE_ITEM_ROLES = (
 	"Engineering User",
+	"Engineering Master Manager",
 	"Engineering Manager",
 )
 
